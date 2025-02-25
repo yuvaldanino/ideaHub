@@ -18,6 +18,7 @@ Convert spoken ideas into structured outlines using advanced AI models and AWS s
   - CloudWatch
 
 ### Workflow
+![Alt text](idea_hub_aws_diagram.jpeg)
 1. **User Interaction**: User records their idea using the Gradio interface on an EC2 instance.
 2. **Audio Processing**: Audio file is uploaded to S3 and converted to text using Whisper.
 3. **Outline Generation**: Text is sent to GPT-4 via a Lambda function, and the generated outline is stored in DynamoDB.
