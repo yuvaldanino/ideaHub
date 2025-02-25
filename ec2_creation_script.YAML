@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: 'ProcessRequestFunction'
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+
+          ENDPOINT_NAME = os.environ['SAGEMAKER_ENDPOINT']
+
+          def lambda_handler(event, context):
+              input_text = event['input_text']
+              response = call_gpt4_model(input_text)
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps(response)
+              }
+
+          def call_gpt4_model(input_text):
+              client = boto3.client('sagemaker-runtime')
+              try:
+                  response = client.invoke_endpoint(
+                      EndpointName=ENDPOINT_NAME,
+                      ContentType='application/json',
+                      Body=json.dumps({'input_text': input_text})
+                  )
+                  result = json.loads(response['Body'].read().decode())
+                  return result
+              except Exception as e:
+                  return {"error": str(e)}
+      Runtime: 'python3.8'
+      Environment:
+        Variables:
+          SAGEMAKER_ENDPOINT: 'your-sagemaker-endpoint'  # Replace with your actual endpoint name
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'LambdaSageMakerPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sagemaker:InvokeEndpoint'
+                Resource: '*'
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+
+  MyApiGateway:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: 'MyAppAPI'
+
+  MyApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      ParentId: !GetAtt MyApiGateway.RootResourceId
+      PathPart: 'generate-outline'
+      RestApiId: !Ref MyApiGateway
+
+  MyApiMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: 'NONE'
+      HttpMethod: 'POST'
+      ResourceId: !Ref MyApiResource
+      RestApiId: !Ref MyApiGateway
+      Integration:
+        IntegrationHttpMethod: 'POST'
+        Type: 'AWS_PROXY'
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations
+          - LambdaArn: !GetAtt MyLambdaFunction.Arn
+
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref MyLambdaFunction
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Sub
+        - arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*
+        - ApiId: !Ref MyApiGateway

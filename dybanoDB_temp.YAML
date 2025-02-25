@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyDynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'UserOutlines'
+      AttributeDefinitions:
+        - AttributeName: 'UserId'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'UserId'
+          KeyType: 'HASH'
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

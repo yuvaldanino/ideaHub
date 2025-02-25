@@ -1,0 +1,70 @@
+What is AWS Lambda?
+AWS Lambda is a serverless compute service that lets you run code without provisioning or managing servers. 
+You pay only for the compute time you consume, and there is a free tier available.
+
+What Will We Use Lambda For?
+We'll use AWS Lambda to handle backend logic, such as:
+
+Processing requests from the frontend.
+Calling the GPT-4 model deployed on SageMaker.
+Interacting with the database (RDS).
+Uploading and retrieving files from S3.
+
+Exactly! You've got it. By using AWS Lambda to handle the API calls to 
+your SageMaker model, you can efficiently manage the backend logic 
+without needing a constantly running server. This setup is both 
+cost-effective and scalable.
+
+
+**using .YAML to create EC2 instance 
+- AWS CloudGromation 
+-   CloudFormation will create the resources defined 
+    in your template, including the EC2 instance and security group.
+
+    Summary of the Flow
+User Interaction:
+
+A user interacts with your application hosted on the EC2 instance (e.g., using the Gradio UI).
+API Request:
+
+The EC2 instance sends an API request to the API Gateway Invoke URL.
+API Gateway:
+
+API Gateway receives the request and routes it to the appropriate Lambda function.
+Lambda Execution:
+
+The Lambda function processes the request, calls the SageMaker endpoint, and retrieves the model's output.
+Response Handling:
+
+The Lambda function processes the response from SageMaker and sends it back to the EC2 instance via API Gateway.
+The EC2 instance then displays the result to the user
+
+
+Flow Diagram
+User → EC2 Instance:
+
+The user interacts with the application hosted on the EC2 instance.
+EC2 Instance → API Gateway:
+
+The EC2 instance sends an API request to the API Gateway.
+API Gateway → Lambda Function:
+
+API Gateway routes the request to the Lambda function.
+Lambda Function → SageMaker Endpoint:
+
+The Lambda function calls the SageMaker endpoint with the input text.
+SageMaker Endpoint → Lambda Function:
+
+The SageMaker endpoint processes the input and returns the generated outline to the Lambda function.
+Lambda Function → DynamoDB:
+
+The Lambda function stores the generated outline in DynamoDB.
+Lambda Function → API Gateway:
+
+The Lambda function sends the response back to the API Gateway.
+API Gateway → EC2 Instance:
+
+API Gateway forwards the response to the EC2 instance.
+EC2 Instance → User:
+
+The EC2 instance displays the result to the user.
